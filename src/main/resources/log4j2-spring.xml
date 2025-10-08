@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
+        <Console name="Console">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1} - %msg%n%throwable"/>
+        </Console>
         <File name="AuditFile" fileName="logs/db-audit.log">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %msg%n"/>
         </File>
     </Appenders>
+
     <Loggers>
+        <Logger name="com.frisk" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
         <Logger name="com.frisk.audit" level="info" additivity="false">
             <AppenderRef ref="AuditFile"/>
+            <AppenderRef ref="Console"/>
         </Logger>
-        <Root level="warn"/>
+        <Root level="warn">
+            <AppenderRef ref="Console"/>
+        </Root>
     </Loggers>
 </Configuration>

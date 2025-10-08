@@ -38,7 +38,8 @@ public class SecurityConfig {
                                 "/api/wigellpadel/v1/mybookings",
                                 "/api/wigellpadel/v1/booking/bookcourt",
                                 "/api/wigellpadel/v1/updatebooking",
-                                "/api/wigellpadel/v1/cancelbooking"
+                                "/api/wigellpadel/v1/cancelbooking",
+                                "/api/wigellpadel/fx/**"
                         ).hasAnyRole("USER","ADMIN")
                         .anyRequest().permitAll()
                 )
@@ -53,10 +54,10 @@ public class SecurityConfig {
 
     @Bean
     UserDetailsService users() {
-        UserDetails u1 = User.withUsername("niklaseinasson").password("{noop}Ne123").roles("USER").build();
-        UserDetails u2 = User.withUsername("benjaminportsmouth").password("{noop}Bp123").roles("USER").build();
-        UserDetails u3 = User.withUsername("christofferfrisk").password("{noop}Cf123").roles("USER").build();
-        UserDetails admin = User.withUsername("admin").password("{noop}Admin123").roles("ADMIN").build();
+        UserDetails u1 = User.withUsername("niklaseinarsson").password("{noop}Ne123!").roles("USER").build();
+        UserDetails u2 = User.withUsername("benjaminportsmouth").password("{noop}Bp123!").roles("USER").build();
+        UserDetails u3 = User.withUsername("christofferfrisk").password("{noop}Cf123!").roles("USER").build();
+        UserDetails admin = User.withUsername("admin").password("{noop}Admin123!").roles("ADMIN").build();
         return new InMemoryUserDetailsManager(u1, u2, u3, admin);
     }
 

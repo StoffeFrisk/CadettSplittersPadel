@@ -3,7 +3,7 @@ package com.frisk.cadettsplitterspadel.entities;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "customers")
+@Table(name = "padel_customers")
 public class Customer {
 
     @Id
