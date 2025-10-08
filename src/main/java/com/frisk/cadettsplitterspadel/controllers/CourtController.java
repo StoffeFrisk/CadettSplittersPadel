@@ -5,14 +5,15 @@ import com.frisk.cadettsplitterspadel.enums.BookingStatus;
 import com.frisk.cadettsplitterspadel.exceptions.ResourceNotFoundException;
 import com.frisk.cadettsplitterspadel.repositories.BookingRepository;
 import com.frisk.cadettsplitterspadel.repositories.CourtRepository;
+import com.frisk.cadettsplitterspadel.services.CourtService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,26 +22,31 @@ import java.util.Map;
 @RequestMapping("/api/wigellpadel")
 public class CourtController {
 
-    private final CourtRepository courtRepository;
-    private final BookingRepository bookingRepository;
     private static final Logger log = LoggerFactory.getLogger(CourtController.class);
 
-    public CourtController(CourtRepository courtRepository, BookingRepository bookingRepository) {
+    private final CourtRepository courtRepository;
+    private final BookingRepository bookingRepository;
+    private final CourtService courtService;
+
+    public CourtController(CourtRepository courtRepository,
+                           BookingRepository bookingRepository,
+                           CourtService courtService) {
         this.courtRepository = courtRepository;
         this.bookingRepository = bookingRepository;
+        this.courtService = courtService;
     }
 
-    //User
+    // ---------- USER ----------
+
     @GetMapping("/listcourts")
     public ResponseEntity<Map<String, Object>> listCourts() {
         List<Court> list = courtRepository.findAllByActiveTrue();
-        Map<String, Object> courts = new HashMap<>();
-        if(list.isEmpty()) {
-            courts.put("message", "List is empty");
+        Map<String, Object> body = new LinkedHashMap<>();
+        if (list.isEmpty()) {
+            body.put("message", "List is empty");
         }
-        courts.put("data", list);
-        return ResponseEntity.ok(courts);
-
+        body.put("data", list);
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/checkavailability/{courtId}/{date}")
@@ -84,21 +90,11 @@ public class CourtController {
         return ResponseEntity.ok(Map.of("data", data));
     }
 
-    //Admin
+    // ---------- ADMIN (delegerar till service) ----------
+
     @PostMapping("/v1/addcourt")
     public ResponseEntity<Map<String, Object>> addCourt(@RequestBody Court court) {
-        if (court.getCourtNumber() <= 0) {
-            throw new IllegalArgumentException("courtNumber must be > 0");
-        }
-        if (court.getHourlyRateSek() <= 0) {
-            throw new IllegalArgumentException("hourlyRateSek must be > 0");
-        }
-        if (courtRepository.existsByCourtNumber(court.getCourtNumber())) {
-            throw new IllegalArgumentException("court_number already exists");
-        }
-
-        court.setActive(true);
-        Court saved = courtRepository.save(court);
+        Court saved = courtService.add(court);
         log.info("court created id={} number={} rate={}sek",
                 saved.getId(), saved.getCourtNumber(), saved.getHourlyRateSek());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("data", saved));
@@ -106,46 +102,16 @@ public class CourtController {
 
     @PutMapping("/v1/updatecourt")
     public ResponseEntity<Map<String, Object>> updateCourt(@RequestBody Court incoming) {
-        Integer id = incoming.getId();
-        if (id == null) throw new IllegalArgumentException("Court id is required");
-
-        Court existing = courtRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Court", id));
-        if (!existing.isActive()) throw new IllegalArgumentException("Court is deleted/inactive");
-
-        if (incoming.getCourtNumber() <= 0) {
-            throw new IllegalArgumentException("courtNumber must be > 0");
-        }
-        if (incoming.getHourlyRateSek() <= 0) {
-            throw new IllegalArgumentException("hourlyRateSek must be > 0");
-        }
-        if (incoming.getCourtNumber() != existing.getCourtNumber()
-                && courtRepository.existsByCourtNumber(incoming.getCourtNumber())) {
-            throw new IllegalArgumentException("court_number already exists");
-        }
-
-        int oldNumber = existing.getCourtNumber();
-        int oldRate   = existing.getHourlyRateSek();
-
-        existing.setCourtNumber(incoming.getCourtNumber());
-        existing.setHourlyRateSek(incoming.getHourlyRateSek());
-
-        Court saved = courtRepository.save(existing);
-        log.info("court updated id={} number:{}->{} rate:{}->{}",
-                saved.getId(), oldNumber, saved.getCourtNumber(), oldRate, saved.getHourlyRateSek());
+        Court saved = courtService.update(incoming);
+        log.info("court updated id={} number={} rate={}sek",
+                saved.getId(), saved.getCourtNumber(), saved.getHourlyRateSek());
         return ResponseEntity.ok(Map.of("data", saved));
     }
 
     @DeleteMapping("/v1/remcourt/{id}")
     public ResponseEntity<Map<String, String>> removeCourt(@PathVariable Integer id) {
-        Court court = courtRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Court", id));
-        if(!court.isActive()) {
-            return ResponseEntity.ok(Map.of("message", "Court is already deleted/inactive"));
-        }
-        court.setActive(false);
-        courtRepository.save(court);
-        log.info("court soft-deleted id={} number={}", court.getId(), court.getCourtNumber());
+        courtService.delete(id);
+        log.info("court soft-deleted id={}", id);
         return ResponseEntity.ok(Map.of("message", "Court deleted/inactive"));
     }
 }

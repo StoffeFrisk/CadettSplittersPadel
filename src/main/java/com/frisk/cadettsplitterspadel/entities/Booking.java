@@ -3,6 +3,7 @@ package com.frisk.cadettsplitterspadel.entities;
 import com.frisk.cadettsplitterspadel.enums.BookingStatus;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -18,7 +19,7 @@ public class Booking {
     @JoinColumn(name = "court_id", nullable = false)
     private Court court;
 
-    @ManyToOne(fetch= FetchType.LAZY,optional = false)
+    @ManyToOne(fetch= FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
@@ -37,12 +38,14 @@ public class Booking {
     @Column(name = "price_sek", nullable = false)
     private int priceSek;
 
+    @Column(name = "price_eur", precision = 12, scale = 2)
+    private BigDecimal priceEur;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status = BookingStatus.ACTIVE;
 
-    public Booking() {
-    }
+    public Booking() {}
 
     public Booking(Court court, Customer customer, LocalDate bookingDate,
                    LocalTime startTime, LocalTime endTime, Integer numberOfPlayers, int priceSek) {
@@ -55,72 +58,40 @@ public class Booking {
         this.priceSek = priceSek;
     }
 
-    public int getBookingId() {
-        return id;
-    }
+    public Integer getId() { return id; }
 
+    public Integer getBookingId() { return id; }
 
-    public Court getCourt() {
-        return court;
-    }
+    public Court getCourt() { return court; }
+    public void setCourt(Court court) { this.court = court; }
 
-    public void setCourt(Court court) {
-        this.court = court;
-    }
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 
-    public Customer getCustomer() {
-        return customer;
-    }
+    public LocalDate getBookingDate() { return bookingDate; }
+    public void setBookingDate(LocalDate bookingDate) { this.bookingDate = bookingDate; }
 
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
-    }
+    public LocalTime getStartTime() { return startTime; }
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
 
-    public LocalDate getBookingDate() {
-        return bookingDate;
-    }
+    public LocalTime getEndTime() { return endTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
 
-    public void setBookingDate(LocalDate bookingDate) {
-        this.bookingDate = bookingDate;
-    }
+    public Integer getNumberOfPlayers() { return numberOfPlayers; }
+    public void setNumberOfPlayers(Integer numberOfPlayers) { this.numberOfPlayers = numberOfPlayers; }
 
-    public LocalTime getStartTime() {
-        return startTime;
-    }
+    public int getPriceSek() { return priceSek; }
+    public void setPriceSek(int totalPriceSek) { this.priceSek = totalPriceSek; }
 
-    public void setStartTime(LocalTime startTime) {
-        this.startTime = startTime;
-    }
+    public BigDecimal getPriceEur() { return priceEur; }
+    public void setPriceEur(BigDecimal priceEur) { this.priceEur = priceEur; }
 
-    public LocalTime getEndTime() {
-        return endTime;
-    }
+    public BookingStatus getStatus() { return status; }
+    public void setStatus(BookingStatus status) { this.status = status; }
 
-    public void setEndTime(LocalTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public Integer getNumberOfPlayers() {
-        return numberOfPlayers;
-    }
-
-    public void setNumberOfPlayers(int numberOfPlayers) {
-        this.numberOfPlayers = numberOfPlayers;
-    }
-
-    public int getPriceSek() {
-        return priceSek;
-    }
-
-    public void setPriceSek(int totalPriceSek) {
-        this.priceSek = totalPriceSek;
-    }
-
-    public BookingStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(BookingStatus status) {
-        this.status = status;
+    @PrePersist
+    private void prePersistDefaults() {
+        if (this.numberOfPlayers == null) this.numberOfPlayers = 2;
+        if (this.status == null) this.status = BookingStatus.ACTIVE;
     }
 }

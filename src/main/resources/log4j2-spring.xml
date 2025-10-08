@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <File name="AuditFile" fileName="logs/db-audit.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %msg%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Logger name="com.frisk.audit" level="info" additivity="false">
+            <AppenderRef ref="AuditFile"/>
+        </Logger>
+        <Root level="warn"/>
+    </Loggers>
+</Configuration>

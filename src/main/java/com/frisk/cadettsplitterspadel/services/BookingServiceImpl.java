@@ -15,6 +15,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.util.List;
 import java.util.Objects;
@@ -22,19 +24,23 @@ import java.util.Objects;
 @Service
 public class BookingServiceImpl implements BookingService {
 
-    private static final Logger log  = LoggerFactory.getLogger(BookingServiceImpl.class);
-    private static final ZoneId ZONE = ZoneId.of("Europe/Stockholm");
+    private static final Logger log   = LoggerFactory.getLogger(BookingServiceImpl.class);
+    private static final Logger audit = LoggerFactory.getLogger("com.frisk.audit");
+    private static final ZoneId ZONE  = ZoneId.of("Europe/Stockholm");
 
     private final BookingRepository bookingRepository;
     private final CourtRepository courtRepository;
     private final CustomerService customerService;
+    private final FxService fxService;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               CourtRepository courtRepository,
-                              CustomerService customerService) {
+                              CustomerService customerService,
+                              FxService fxService) {
         this.bookingRepository = bookingRepository;
         this.courtRepository   = courtRepository;
         this.customerService   = customerService;
+        this.fxService         = fxService;
     }
 
     @Override
@@ -58,7 +64,7 @@ public class BookingServiceImpl implements BookingService {
         Court court = courtRepository.findByIdAndActiveTrue(req.getCourtId())
                 .orElseThrow(() -> new ResourceNotFoundException("Court", req.getCourtId()));
 
-        LocalDate date = parseDate(req.getBookingDate());
+        LocalDate date  = parseDate(req.getBookingDate());
         LocalTime start = parseTime(req.getStartTime(), "startTime must be HH:mm");
         LocalTime end   = parseTime(req.getEndTime(),   "endTime must be HH:mm");
 
@@ -88,11 +94,21 @@ public class BookingServiceImpl implements BookingService {
         b.setPriceSek(price);
         b.setStatus(BookingStatus.ACTIVE);
 
-        Booking saved = bookingRepository.save(b);
-        log.info("user={} booked {}h court={} on {} {}-{} (price={} SEK)",
-                userId, hours, court.getCourtNumber(), date, start, end, price);
-        return saved;
+        // SEK -> EUR bara vid bokning (låses i posten)
+        try {
+            BigDecimal eur = fxService.sekToEur(BigDecimal.valueOf(price))
+                    .setScale(2, RoundingMode.HALF_UP);
+            b.setPriceEur(eur);
+        } catch (Exception ex) {
+            log.warn("FX lookup failed, saving without EUR price. user={} priceSek={}", userId, price, ex);
+            b.setPriceEur(null);
+        }
 
+        Booking saved = bookingRepository.save(b);
+        audit.info("SAVE by={} entity=Booking id={}", userId, saved.getBookingId());
+        log.info("user={} booked {}h court={} on {} {}-{} (price={} SEK, priceEur={})",
+                userId, hours, court.getCourtNumber(), date, start, end, price, saved.getPriceEur());
+        return saved;
     }
 
     @Override
@@ -116,7 +132,7 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Court is inactive or does not exist");
         }
 
-        LocalDate date = parseDate(req.getBookingDate());
+        LocalDate date  = parseDate(req.getBookingDate());
         LocalTime start = parseTime(req.getStartTime(), "startTime must be HH:mm");
         LocalTime end   = parseTime(req.getEndTime(),   "endTime must be HH:mm");
 
@@ -144,6 +160,7 @@ public class BookingServiceImpl implements BookingService {
         b.setPriceSek(price);
 
         Booking saved = bookingRepository.save(b);
+        // Medvetet: uppdaterar INTE priceEur här (kursen låses vid bokning)
         log.info("user={} updated booking id={} to {} {}-{} (price={} SEK)",
                 userId, b.getBookingId(), date, start, end, price);
         return saved;
@@ -173,6 +190,7 @@ public class BookingServiceImpl implements BookingService {
 
         b.setStatus(BookingStatus.CANCELED);
         bookingRepository.save(b);
+        audit.info("DELETE by={} entity=Booking id={}", userId, bookingId);
         log.info("user={} canceled booking id={} (date={}, {}-{})",
                 userId, bookingId, b.getBookingDate(), b.getStartTime(), b.getEndTime());
     }
