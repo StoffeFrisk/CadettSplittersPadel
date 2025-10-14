@@ -1,5 +1,6 @@
 package com.frisk.cadettsplitterspadel.services;
 
+import com.frisk.cadettsplitterspadel.dto.BookingDto;
 import com.frisk.cadettsplitterspadel.dto.BookingRequest;
 import com.frisk.cadettsplitterspadel.dto.UpdateBookingRequest;
 import com.frisk.cadettsplitterspadel.entities.Booking;
@@ -53,6 +54,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<BookingDto> myBookingsDto(String userId) {
+        return bookingRepository.findMyBookingsDto(userId);
+    }
+
+    @Override
     @Transactional
     public Booking book(BookingRequest req, String userId) {
         if (req.getCourtId() == null)                      throw new IllegalArgumentException("Court id required");
@@ -94,7 +101,7 @@ public class BookingServiceImpl implements BookingService {
         b.setPriceSek(price);
         b.setStatus(BookingStatus.ACTIVE);
 
-        // SEK -> EUR bara vid bokning (låses i posten)
+        // SEK -> EUR (låses vid bokning)
         try {
             BigDecimal eur = fxService.sekToEur(BigDecimal.valueOf(price))
                     .setScale(2, RoundingMode.HALF_UP);
@@ -160,7 +167,6 @@ public class BookingServiceImpl implements BookingService {
         b.setPriceSek(price);
 
         Booking saved = bookingRepository.save(b);
-        // Medvetet: uppdaterar INTE priceEur här (kursen låses vid bokning)
         log.info("user={} updated booking id={} to {} {}-{} (price={} SEK)",
                 userId, b.getBookingId(), date, start, end, price);
         return saved;
@@ -199,7 +205,8 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public boolean isAvailable(Integer courtId, LocalDate date) {
         return !bookingRepository.existsByCourtIdAndBookingDateAndStatus(
-                courtId, date, BookingStatus.ACTIVE);
+                courtId, date, BookingStatus.ACTIVE
+        );
     }
 
     @Override

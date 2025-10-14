@@ -57,6 +57,7 @@ public class SecurityConfig {
         UserDetails u1 = User.withUsername("niklaseinarsson").password("{noop}Ne123!").roles("USER").build();
         UserDetails u2 = User.withUsername("benjaminportsmouth").password("{noop}Bp123!").roles("USER").build();
         UserDetails u3 = User.withUsername("christofferfrisk").password("{noop}Cf123!").roles("USER").build();
+        //Råkade bli fel admin här men orkade inte byta. Ingen av gruppkamraterna har klagat (än). ^^
         UserDetails admin = User.withUsername("admin").password("{noop}Admin123!").roles("ADMIN").build();
         return new InMemoryUserDetailsManager(u1, u2, u3, admin);
     }

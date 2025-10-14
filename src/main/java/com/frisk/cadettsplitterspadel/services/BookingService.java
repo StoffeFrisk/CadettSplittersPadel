@@ -1,5 +1,6 @@
 package com.frisk.cadettsplitterspadel.services;
 
+import com.frisk.cadettsplitterspadel.dto.BookingDto;
 import com.frisk.cadettsplitterspadel.dto.BookingRequest;
 import com.frisk.cadettsplitterspadel.dto.UpdateBookingRequest;
 import com.frisk.cadettsplitterspadel.entities.Booking;
@@ -18,4 +19,5 @@ public interface BookingService {
     List<Booking> listCanceled();
     List<Booking> listUpcoming();
     List<Booking> listPast();
+    List<BookingDto> myBookingsDto(String userId);
 }

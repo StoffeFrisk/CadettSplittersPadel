@@ -1,5 +1,6 @@
 package com.frisk.cadettsplitterspadel.controllers;
 
+import com.frisk.cadettsplitterspadel.dto.BookingDto;
 import com.frisk.cadettsplitterspadel.dto.BookingRequest;
 import com.frisk.cadettsplitterspadel.dto.UpdateBookingRequest;
 import com.frisk.cadettsplitterspadel.entities.Booking;
@@ -25,7 +26,7 @@ public class BookingController {
 
     @GetMapping("/v1/mybookings")
     public ResponseEntity<Map<String, Object>> myBookings(Authentication auth) {
-        List<Booking> list = bookingService.myBookings(auth.getName());
+        List<BookingDto> list = bookingService.myBookingsDto(auth.getName());
         Map<String, Object> body = new LinkedHashMap<>();
         if (list.isEmpty()) body.put("message", "No bookings found");
         body.put("data", list);
@@ -44,8 +45,11 @@ public class BookingController {
                                                              Authentication auth) {
         boolean isAdmin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
         Booking saved = bookingService.update(req, auth.getName(), isAdmin);
-        return ResponseEntity.ok(Map.of("data", saved));
+
+        BookingDto dto = toDto(saved);
+        return ResponseEntity.ok(Map.of("data", dto));
     }
 
     @DeleteMapping("/v1/cancelbooking")
@@ -59,7 +63,9 @@ public class BookingController {
 
     @GetMapping("/v1/listcanceled")
     public ResponseEntity<Map<String, Object>> listCanceled() {
-        List<Booking> list = bookingService.listCanceled();
+        List<BookingDto> list = bookingService.listCanceled().stream()
+                .map(this::toDto)
+                .toList();
         Map<String, Object> body = new LinkedHashMap<>();
         if (list.isEmpty()) body.put("message", "No canceled bookings");
         body.put("data", list);
@@ -68,7 +74,9 @@ public class BookingController {
 
     @GetMapping("/v1/listupcoming")
     public ResponseEntity<Map<String, Object>> listUpcoming() {
-        List<Booking> list = bookingService.listUpcoming();
+        List<BookingDto> list = bookingService.listUpcoming().stream()
+                .map(this::toDto)
+                .toList();
         Map<String, Object> body = new LinkedHashMap<>();
         if (list.isEmpty()) body.put("message", "No upcoming bookings");
         body.put("data", list);
@@ -77,10 +85,26 @@ public class BookingController {
 
     @GetMapping("/v1/listpast")
     public ResponseEntity<Map<String, Object>> listPast() {
-        List<Booking> list = bookingService.listPast();
+        List<BookingDto> list = bookingService.listPast().stream()
+                .map(this::toDto)
+                .toList();
         Map<String, Object> body = new LinkedHashMap<>();
         if (list.isEmpty()) body.put("message", "No past bookings");
         body.put("data", list);
         return ResponseEntity.ok(body);
+    }
+
+    private BookingDto toDto(Booking b) {
+        return new BookingDto(
+                b.getBookingId(),
+                b.getCourt().getId(),
+                b.getCourt().getCourtNumber(),
+                b.getBookingDate(),
+                b.getStartTime(),
+                b.getEndTime(),
+                b.getNumberOfPlayers(),
+                b.getPriceSek(),
+                b.getStatus()
+        );
     }
 }
