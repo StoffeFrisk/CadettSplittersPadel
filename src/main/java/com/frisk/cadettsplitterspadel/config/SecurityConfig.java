@@ -22,7 +22,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Admin
+
                         .requestMatchers(
                                 "/api/wigellpadel/v1/listcanceled",
                                 "/api/wigellpadel/v1/listupcoming",
@@ -31,7 +31,7 @@ public class SecurityConfig {
                                 "/api/wigellpadel/v1/updatecourt",
                                 "/api/wigellpadel/v1/remcourt/**"
                         ).hasRole("ADMIN")
-                        // User
+
                         .requestMatchers(
                                 "/api/wigellpadel/listcourts",
                                 "/api/wigellpadel/checkavailability/**",

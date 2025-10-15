@@ -36,8 +36,6 @@ public class CourtController {
         this.courtService = courtService;
     }
 
-    // ---------- USER ----------
-
     @GetMapping("/listcourts")
     public ResponseEntity<Map<String, Object>> listCourts() {
         List<Court> list = courtRepository.findAllByActiveTrue();
@@ -89,8 +87,6 @@ public class CourtController {
 
         return ResponseEntity.ok(Map.of("data", data));
     }
-
-    // ---------- ADMIN (delegerar till service) ----------
 
     @PostMapping("/v1/addcourt")
     public ResponseEntity<Map<String, Object>> addCourt(@RequestBody Court court) {
